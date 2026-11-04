@@ -80,6 +80,8 @@ export default defineContentScript({
 
       const onReader = isReaderUrl(location.href);
       root.toggleAttribute('data-wr-article', onReader && next.articleMode);
+      if (onReader && next.articleMode) root.setAttribute('data-wr-style', next.articleStyle);
+      else root.removeAttribute('data-wr-style');
       root.toggleAttribute(
         'data-wr-hide-marks',
         onReader && next.articleMode && next.hideMarks,
@@ -148,6 +150,7 @@ export default defineContentScript({
       removeArticle();
       head.dispose();
       root.removeAttribute('data-wr-article');
+      root.removeAttribute('data-wr-style');
       root.removeAttribute('data-wr-hide-marks');
     });
   },

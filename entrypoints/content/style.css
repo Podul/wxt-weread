@@ -15,9 +15,21 @@
  * 正文改由扩展插入的 .wr-blog 文章用网页字体排版，原 canvas 正文只隐藏、不改宽度。
  */
 
-/* A. 纯白文章背景，去掉纸张纹理和阴影 */
+/*
+ * A. 纯白文章背景，去掉纸张纹理和阴影。
+ * 颜色变量默认是博客风格，F 节的各外观在截获到章节 HTML 后覆盖它们；
+ * 未截获时仍是 canvas 正文，背景保持白色。
+ */
 html[data-wr-article] {
-  background-color: #fff !important;
+  --wr-page: #fff;
+  --wr-bg: #fff;
+  --wr-fg: #1f2328;
+  --wr-muted: #656d76;
+  --wr-accent: #0969da;
+  --wr-border: #d8dee4;
+  --wr-code-bg: #f6f8fa;
+  --wr-font: 18px/1.85 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  background-color: var(--wr-page) !important;
 }
 
 html[data-wr-article] body,
@@ -31,7 +43,7 @@ html[data-wr-article] .readerChapterContent_container,
 html[data-wr-article] .renderTargetContent,
 html[data-wr-article] .wr_horizontalReader,
 html[data-wr-article] .wr_horizontalReader_app_content {
-  background-color: #fff !important;
+  background-color: var(--wr-page) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
@@ -178,7 +190,7 @@ html[data-wr-blog] :is(.readerHeaderButton, .readerFooter_button) {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  color: #0969da !important;
+  color: var(--wr-accent) !important;
   font: 500 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif !important;
   cursor: pointer !important;
 }
@@ -200,8 +212,9 @@ html[data-wr-blog] .readerHeaderButton:hover {
   width: 100%;
   margin: 0 !important;
   padding: 56px 16px 0;
-  color: #1f2328;
-  font: 18px/1.85 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  color: var(--wr-fg);
+  background: var(--wr-bg);
+  font: var(--wr-font);
   letter-spacing: 0.02em;
   text-align: left;
   word-break: break-word;
@@ -216,18 +229,18 @@ html[data-wr-blog] .readerHeaderButton:hover {
 
 .wr-blog-body {
   padding-bottom: 32px;
-  border-bottom: 1px solid #d8dee4;
+  border-bottom: 1px solid var(--wr-border);
 }
 
 .wr-blog-header {
   margin-bottom: 40px;
   padding-bottom: 24px;
-  border-bottom: 1px solid #d8dee4;
+  border-bottom: 1px solid var(--wr-border);
 }
 
 .wr-blog-kicker {
   margin-bottom: 12px;
-  color: #0969da;
+  color: var(--wr-accent);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -235,7 +248,7 @@ html[data-wr-blog] .readerHeaderButton:hover {
 
 .wr-blog-title {
   margin: 0 0 16px;
-  color: #1f2328;
+  color: var(--wr-fg);
   font-size: 34px;
   font-weight: 700;
   line-height: 1.35;
@@ -243,7 +256,7 @@ html[data-wr-blog] .readerHeaderButton:hover {
 }
 
 .wr-blog-meta {
-  color: #656d76;
+  color: var(--wr-muted);
   font-size: 14px;
 }
 
@@ -257,7 +270,7 @@ html[data-wr-blog] .readerHeaderButton:hover {
 
 .wr-blog-body :is(h1, h2, h3, h4, h5, h6) {
   margin: 1.8em 0 0.8em;
-  color: #1f2328;
+  color: var(--wr-fg);
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: 0;
@@ -269,7 +282,7 @@ html[data-wr-blog] .readerHeaderButton:hover {
 .wr-blog-body :is(h4, h5, h6) { font-size: 18px; }
 
 .wr-blog-body [data-align="right"] {
-  color: #656d76;
+  color: var(--wr-muted);
   text-align: right;
 }
 
@@ -280,8 +293,8 @@ html[data-wr-blog] .readerHeaderButton:hover {
 .wr-blog-body blockquote {
   margin: 0 0 1.2em;
   padding: 0 1em;
-  border-left: 4px solid #d8dee4;
-  color: #656d76;
+  border-left: 4px solid var(--wr-border);
+  color: var(--wr-muted);
 }
 
 .wr-blog-body img {
@@ -295,7 +308,7 @@ html[data-wr-blog] .readerHeaderButton:hover {
 .wr-blog-body hr {
   margin: 2em 0;
   border: 0;
-  border-top: 1px solid #d8dee4;
+  border-top: 1px solid var(--wr-border);
 }
 
 .wr-blog-body :is(ul, ol) {
@@ -307,7 +320,7 @@ html[data-wr-blog] .readerHeaderButton:hover {
   overflow-x: auto;
   padding: 16px;
   border-radius: 6px;
-  background: #f6f8fa;
+  background: var(--wr-code-bg);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -319,12 +332,410 @@ html[data-wr-blog] .readerHeaderButton:hover {
 
 .wr-blog-body :is(td, th) {
   padding: 6px 12px;
-  border: 1px solid #d8dee4;
+  border: 1px solid var(--wr-border);
 }
 
 .wr-blog-note {
   margin-left: 2px;
-  color: #0969da;
+  color: var(--wr-accent);
   font-size: 12px;
   cursor: help;
+}
+
+/*
+ * F. 摸鱼外观：只在截获到章节 HTML（data-wr-blog）后生效，canvas 正文不受影响。
+ * 各外观覆盖 A 节的颜色变量，装饰全部用伪元素，不改动文章 DOM。
+ */
+html[data-wr-blog]:is([data-wr-style="code"], [data-wr-style="terminal"]) {
+  color-scheme: dark;
+}
+
+html[data-wr-blog]:is([data-wr-style="code"], [data-wr-style="sheet"], [data-wr-style="terminal"]) .wr-blog {
+  letter-spacing: 0;
+}
+
+html[data-wr-blog]:is([data-wr-style="code"], [data-wr-style="sheet"], [data-wr-style="terminal"]) :is(.wr-blog-title, .wr-blog-body :is(h1, h2, h3, h4, h5, h6)) {
+  margin: 0 0 0.8em;
+  font-size: 1em;
+  line-height: inherit;
+}
+
+/* F1. 代码编辑器：深色、行号，段落是注释，章节名是函数名 */
+html[data-wr-blog][data-wr-style="code"] {
+  --wr-page: #1e1e1e;
+  --wr-bg: #1e1e1e;
+  --wr-fg: #d4d4d4;
+  --wr-muted: #6a9955;
+  --wr-accent: #569cd6;
+  --wr-border: #333;
+  --wr-code-bg: #252526;
+  --wr-font: 15px/1.7 "SF Mono", Menlo, Consolas, "PingFang SC", "Microsoft YaHei", monospace;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog {
+  padding-top: 0;
+  counter-reset: wr-line;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-kicker {
+  display: inline-block;
+  margin-bottom: 24px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--wr-accent);
+  background: #252526;
+  color: var(--wr-fg);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-kicker::after {
+  content: ".md";
+}
+
+html[data-wr-blog][data-wr-style="code"] :is(.wr-blog-header, .wr-blog-body) {
+  position: relative;
+  padding-left: 4em;
+}
+
+/* 行号：不设 top，绝对定位的 ::before 停在所在行，left 统一对齐到左侧槽位。 */
+html[data-wr-blog][data-wr-style="code"] :is(
+  .wr-blog-title,
+  .wr-blog-meta,
+  .wr-blog-body :is(p, h1, h2, h3, h4, h5, h6, li, pre)
+)::before {
+  position: absolute;
+  left: 0;
+  width: 2.5em;
+  color: #858585;
+  font-weight: 400;
+  text-align: right;
+  counter-increment: wr-line;
+  content: counter(wr-line);
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-title {
+  color: #dcdcaa;
+  font-weight: 400;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-title::after {
+  color: var(--wr-fg);
+  content: "() {";
+}
+
+html[data-wr-blog][data-wr-style="code"] :is(.wr-blog-title, .wr-blog-meta, .wr-blog-body :is(p, h1, h2, h3, h4, h5, h6)) {
+  display: list-item;
+  list-style-position: inside;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-title::marker {
+  color: var(--wr-accent);
+  content: "function ";
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-meta {
+  margin-bottom: 0.8em;
+  font-size: 1em;
+}
+
+html[data-wr-blog][data-wr-style="code"] :is(.wr-blog-meta, .wr-blog-body p)::marker {
+  content: "// ";
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-body {
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: var(--wr-muted);
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-body p {
+  margin-bottom: 0.6em;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-body :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: 1.2em;
+  color: #c586c0;
+  font-weight: 400;
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-body :is(h1, h2, h3, h4, h5, h6)::marker {
+  content: "/** ";
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-body :is(h1, h2, h3, h4, h5, h6)::after {
+  content: " */";
+}
+
+html[data-wr-blog][data-wr-style="code"] .wr-blog-body::after {
+  display: block;
+  margin-bottom: 32px;
+  color: var(--wr-fg);
+  content: "}";
+}
+
+/* F2. 电子表格：左侧行号、顶部列头，A 列放正文，右侧铺空白单元格 */
+html[data-wr-blog][data-wr-style="sheet"] {
+  --wr-sheet-a: min(760px, calc(100% - 48px));
+  --wr-accent: #1e7b45;
+  --wr-border: #e1e1e1;
+  --wr-fg: #222;
+  --wr-muted: #666;
+  --wr-font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog {
+  position: relative;
+  padding: 0 0 32px;
+  counter-reset: wr-row;
+}
+
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog > * {
+  max-width: none;
+  margin: 0 !important;
+  padding: 0;
+  border: 0;
+}
+
+/* A 列列头 */
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog::before {
+  display: block;
+  box-sizing: border-box;
+  width: calc(48px + var(--wr-sheet-a));
+  height: 24px;
+  padding-left: 48px;
+  border-right: 1px solid #d4d4d4;
+  border-bottom: 1px solid #d4d4d4;
+  background: linear-gradient(#e6e6e6, #e6e6e6) 0 0 / 48px 100% no-repeat, #f3f3f3;
+  color: #444;
+  font-size: 12px;
+  line-height: 24px;
+  text-align: center;
+  content: "A";
+}
+
+/* B 列往后：等宽字母每个占一列宽度，背景画网格 */
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: calc(48px + var(--wr-sheet-a));
+  overflow: hidden;
+  background:
+    linear-gradient(#f3f3f3, #f3f3f3) 0 0 / 100% 24px no-repeat,
+    repeating-linear-gradient(to right, transparent 0 95px, #e1e1e1 95px 96px),
+    repeating-linear-gradient(transparent 0 23px, #e1e1e1 23px 24px);
+  color: #444;
+  font: 12px/24px Menlo, Consolas, monospace;
+  letter-spacing: calc(96px - 1ch);
+  text-indent: calc(48px - 0.5ch);
+  white-space: nowrap;
+  content: "BCDEFGHIJKLMNOPQRSTUVWXYZ";
+}
+
+html[data-wr-blog][data-wr-style="sheet"] :is(
+  .wr-blog-header > *,
+  .wr-blog-body :is(p, h1, h2, h3, h4, h5, h6, li, pre, figcaption)
+) {
+  position: relative;
+  box-sizing: border-box;
+  width: calc(48px + var(--wr-sheet-a));
+  min-height: 24px;
+  margin: 0;
+  padding: 2px 8px 2px 56px;
+  border-right: 1px solid var(--wr-border);
+  border-bottom: 1px solid var(--wr-border);
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+html[data-wr-blog][data-wr-style="sheet"] :is(
+  .wr-blog-header > *,
+  .wr-blog-body :is(p, h1, h2, h3, h4, h5, h6, li, pre, figcaption)
+)::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 48px;
+  padding-top: 2px;
+  border-right: 1px solid #d4d4d4;
+  border-bottom: 1px solid #d4d4d4;
+  background: #f3f3f3;
+  color: #666;
+  font: 400 12px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: center;
+  counter-increment: wr-row;
+  content: counter(wr-row);
+}
+
+/* 选中单元格 */
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog-kicker {
+  outline: 2px solid var(--wr-accent);
+  outline-offset: -2px;
+  color: var(--wr-fg);
+  font-weight: 400;
+}
+
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog-title {
+  font-weight: 700;
+}
+
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog-body :is(blockquote, ul, ol, div, figure) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  list-style: none;
+}
+
+html[data-wr-blog][data-wr-style="sheet"] .wr-blog-body :is(hr, img) {
+  margin: 0;
+  margin-left: 56px;
+}
+
+/* F3. 在线文档：灰底，白纸居中，顶部菜单栏 */
+html[data-wr-blog][data-wr-style="doc"] {
+  --wr-doc-pad: max(16px, min(96px, 8vw));
+  --wr-page: #eef0f3;
+  --wr-accent: #3b5bdb;
+  --wr-fg: #262626;
+  --wr-muted: #737373;
+  --wr-border: #e5e5e5;
+  --wr-font: 16px/1.8 "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", serif;
+}
+
+/* 纸张加左右外边距仍占满一整行，翻章按钮才会换到纸张下方。 */
+html[data-wr-blog][data-wr-style="doc"] .readerContent .app_content > .wr-blog {
+  flex-basis: min(816px, 100%) !important;
+  margin: 32px calc((100% - min(816px, 100%)) / 2) !important;
+  padding: 0 var(--wr-doc-pad) 72px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%), 0 4px 16px rgb(0 0 0 / 6%);
+  letter-spacing: 0;
+}
+
+html[data-wr-blog][data-wr-style="doc"] .wr-blog::before {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: block;
+  margin: 0 calc(var(--wr-doc-pad) * -1) 64px;
+  padding: 0 var(--wr-doc-pad);
+  border-bottom: 1px solid var(--wr-border);
+  background: #f8f9fa;
+  color: #4d4d4d;
+  font: 13px/40px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  white-space: pre;
+  overflow: hidden;
+  content: "文件    编辑    视图    插入    格式    工具    帮助";
+}
+
+html[data-wr-blog][data-wr-style="doc"] :is(.wr-blog-header, .wr-blog-body) {
+  border-bottom: 0;
+}
+
+html[data-wr-blog][data-wr-style="doc"] .wr-blog-title {
+  font-size: 28px;
+  text-align: center;
+}
+
+html[data-wr-blog][data-wr-style="doc"] :is(.wr-blog-kicker, .wr-blog-meta) {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-align: center;
+}
+
+html[data-wr-blog][data-wr-style="doc"] .wr-blog-body p {
+  text-indent: 2em;
+}
+
+/* F4. 终端日志：黑底等宽，段落是 INFO 日志，标题是命令 */
+html[data-wr-blog][data-wr-style="terminal"] {
+  --wr-page: #0c0c0c;
+  --wr-bg: #0c0c0c;
+  --wr-fg: #cccccc;
+  --wr-muted: #6e7681;
+  --wr-accent: #3fb950;
+  --wr-border: #30363d;
+  --wr-code-bg: #161b22;
+  --wr-font: 14px/1.7 "SF Mono", Menlo, Consolas, "PingFang SC", "Microsoft YaHei", monospace;
+}
+
+html[data-wr-blog][data-wr-style="terminal"] :is(.wr-blog-header, .wr-blog-body) {
+  border-bottom: 1px dashed var(--wr-border);
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-kicker {
+  color: var(--wr-accent);
+  font-size: 1em;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-kicker::before {
+  content: "user@server:~/";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-kicker::after {
+  color: var(--wr-fg);
+  content: "$ tail -f app.log";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-title::before {
+  color: var(--wr-accent);
+  content: "==> ";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-meta {
+  font-size: 1em;
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-meta::before {
+  content: "# ";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body p {
+  margin-bottom: 0.6em;
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body p::before {
+  color: var(--wr-accent);
+  content: "[INFO] ";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body blockquote {
+  border-left: 0;
+  padding: 0;
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body blockquote p::before {
+  color: #d29922;
+  content: "[WARN] ";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: 1.2em;
+  color: #58a6ff;
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body :is(h1, h2, h3, h4, h5, h6)::before {
+  content: "==> ";
+}
+
+html[data-wr-blog][data-wr-style="terminal"] .wr-blog-body::after {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.2em;
+  margin-top: 0.6em;
+  background: var(--wr-fg);
+  vertical-align: middle;
+  content: "";
 }

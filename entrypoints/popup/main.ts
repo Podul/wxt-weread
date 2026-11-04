@@ -1,4 +1,5 @@
 import {
+  type ArticleStyle,
   normalizeSettings,
   normalizeTitle,
   settings,
@@ -6,6 +7,8 @@ import {
 } from '../../utils/settings';
 
 const articleMode = document.querySelector<HTMLInputElement>('#article-mode')!;
+const articleStyle = document.querySelector<HTMLSelectElement>('#article-style')!;
+const articleStyleRow = document.querySelector<HTMLElement>('#article-style-row')!;
 const hideMarks = document.querySelector<HTMLInputElement>('#hide-marks')!;
 const hideMarksRow = document.querySelector<HTMLElement>('#hide-marks-row')!;
 const spoofTitle = document.querySelector<HTMLInputElement>('#spoof-title')!;
@@ -18,6 +21,9 @@ let dirty = false;
 
 function render() {
   articleMode.checked = current.articleMode;
+  articleStyle.value = current.articleStyle;
+  articleStyle.disabled = !current.articleMode;
+  articleStyleRow.classList.toggle('row--disabled', !current.articleMode);
   hideMarks.checked = current.hideMarks;
   hideMarks.disabled = !current.articleMode;
   hideMarksRow.classList.toggle('row--disabled', !current.articleMode);
@@ -43,6 +49,10 @@ async function save(patch: Partial<Settings>) {
 
 articleMode.addEventListener('change', () => {
   void save({ articleMode: articleMode.checked });
+});
+
+articleStyle.addEventListener('change', () => {
+  void save({ articleStyle: articleStyle.value as ArticleStyle });
 });
 
 hideMarks.addEventListener('change', () => {
