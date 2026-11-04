@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文档助手</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <header class="header">
+        <h1>文档助手</h1>
+        <p class="subtitle">阅读页外观与标签页伪装</p>
+      </header>
+
+      <section class="group" aria-labelledby="reader-heading">
+        <h2 class="group-title" id="reader-heading">阅读页</h2>
+
+        <label class="row">
+          <span class="row-label">文章模式</span>
+          <input class="switch" id="article-mode" type="checkbox" role="switch" />
+        </label>
+
+        <label class="row row-sub" id="hide-marks-row">
+          <span class="row-label">隐藏划线、批注和想法气泡</span>
+          <input class="switch" id="hide-marks" type="checkbox" role="switch" />
+        </label>
+      </section>
+
+      <section class="group" aria-labelledby="tab-heading">
+        <h2 class="group-title" id="tab-heading">标签页</h2>
+
+        <label class="row">
+          <span class="row-label">伪装标题</span>
+          <input class="switch" id="spoof-title" type="checkbox" role="switch" />
+        </label>
+
+        <label class="field" id="title-field">
+          <span class="sr-only">伪装后的标签页标题</span>
+          <input
+            id="spoof-title-text"
+            type="text"
+            maxlength="80"
+            placeholder="工作文档"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+
+        <label class="row">
+          <span class="row-label">伪装网站图标</span>
+          <input class="switch" id="spoof-favicon" type="checkbox" role="switch" />
+        </label>
+      </section>
+
+      <p class="hint" role="status" aria-live="polite">
+        设置自动保存，仅对微信读书阅读页生效。关闭文章模式即可恢复原版页面；标题与图标伪装可在上方单独关闭。
+      </p>
+    </main>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

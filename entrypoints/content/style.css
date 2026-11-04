@@ -1,0 +1,330 @@
+/*
+ * 微信读书阅读页「文章模式」样式。
+ *
+ * 正文由读书绘制在 canvas 上，字体、字号和文字颜色由读书自己的设置决定，CSS 改不了。
+ * 「浅色主题 + 上下滚动」时读书本身就是单栏文章排版，这里负责去掉其余读书界面。
+ *
+ * 约束：这里只允许改颜色、背景和可见性。
+ * 不要改 font-*、line-height、letter-spacing、width/height、padding/margin、
+ * position、transform、overflow、display，否则会造成文字错位。
+ *
+ * 隐藏读书 UI 时保留布局盒子（visibility 而不是 display:none），
+ * 避免容器尺寸变化导致逐字坐标失效。
+ *
+ * 截获到章节 HTML 后会额外加上 data-wr-blog（见 E 节）：
+ * 正文改由扩展插入的 .wr-blog 文章用网页字体排版，原 canvas 正文只隐藏、不改宽度。
+ */
+
+/* A. 纯白文章背景，去掉纸张纹理和阴影 */
+html[data-wr-article] {
+  background-color: #fff !important;
+}
+
+html[data-wr-article] body,
+html[data-wr-article] .app,
+html[data-wr-article] #routerView,
+html[data-wr-article] .readerContent,
+html[data-wr-article] .app_content,
+html[data-wr-article] .readerContent .app_content,
+html[data-wr-article] .readerChapterContent,
+html[data-wr-article] .readerChapterContent_container,
+html[data-wr-article] .renderTargetContent,
+html[data-wr-article] .wr_horizontalReader,
+html[data-wr-article] .wr_horizontalReader_app_content {
+  background-color: #fff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/*
+ * B. 隐藏读书页 chrome：顶栏、底栏、工具栏、目录、页码。
+ * 只用 visibility 隐藏（不用 opacity），下面的例外元素才能单独显示出来。
+ */
+html[data-wr-article] :is(
+  .readerTopBar,
+  .readerBottomBar,
+  .readerControls,
+  .readerControls_item,
+  .wr_tooltip_container,
+  .readerCatalog,
+  .readerNotePanel,
+  .font-panel-content,
+  .reader_float_panel_container,
+  .renderTargetPageInfo,
+  .renderTargetPageInfo_header_chapterTitle
+) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/*
+ * 例外：翻章/翻页入口，以及「切换为上下滚动」「切换为浅色」两个读书原生按钮。
+ * 后两者只在双栏翻页或深色主题下才存在，点一次后读书会记住设置，按钮随之消失。
+ */
+html[data-wr-article] :is(
+  .readerFooter_button,
+  .renderTarget_pager_button,
+  .readerControls_item.isHorizontalReader,
+  .readerControls_item.white
+) {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* 翻章/翻页按钮改成文档里的文字链接 */
+html[data-wr-article] :is(.readerFooter_button, .renderTarget_pager_button) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #0969da !important;
+}
+
+html[data-wr-article] :is(.readerFooter_button, .renderTarget_pager_button):hover {
+  text-decoration: underline !important;
+}
+
+/* C. 正文统一为文档深灰（只改颜色，不改字体度量） */
+html[data-wr-article] .readerContent [data-wr-role="text"],
+html[data-wr-article] .readerContent .wr_absolute,
+html[data-wr-article] .chapterTitle {
+  color: #1f2328 !important;
+}
+
+/* D. 隐藏划线、批注与想法气泡 */
+html[data-wr-hide-marks] .readerContent :is(
+  [class*="underline" i],
+  [data-wr-role="underline"]
+),
+html[data-wr-hide-marks] :is(
+  .reader_note_bubble,
+  .readerNotePanel,
+  .reader_float_panel_container
+) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 划线也可能以背景图/下划线/边框绘制在正文字符本身，统一中和。 */
+html[data-wr-hide-marks] .readerContent [data-wr-role="text"] {
+  text-decoration: none !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/*
+ * E. 博客文章：扩展插入的 .wr-blog 取代 canvas 正文。
+ * 读书原生的「上一章」「下一章」按钮挪到文章下方排成一行，
+ * 仍然由用户真实点击触发（读书会忽略脚本模拟的点击）。
+ */
+html[data-wr-blog] .readerContent .app_content {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+
+html[data-wr-blog] .readerContent .app_content > * {
+  flex: 0 0 100% !important;
+  order: 0;
+}
+
+/*
+ * 原正文保留宽度、只收起高度，关闭文章模式后读书无需重新排版。
+ * 它必须紧挨在文章上方：读书翻章和恢复进度时按它的位置 scrollTo，这样坐标才落在文章里。
+ */
+html[data-wr-blog] .readerContent .app_content > .wr_various_font_provider_wrapper {
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+html[data-wr-blog] .readerContent .app_content > .wr-blog {
+  order: 1;
+}
+
+html[data-wr-blog] .readerContent .app_content > :is(.readerContentHeader, .readerFooter) {
+  flex: 1 1 0 !important;
+  order: 2;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 24px 0 96px !important;
+}
+
+html[data-wr-blog] .readerContent .app_content > .readerContentHeader {
+  padding-left: max(16px, calc(50% - 360px)) !important;
+  text-align: left !important;
+}
+
+html[data-wr-blog] .readerContent .app_content > .readerFooter {
+  order: 3;
+  padding-right: max(16px, calc(50% - 360px)) !important;
+  text-align: right !important;
+}
+
+/* 文章模式下主题由扩展决定，读书的深浅色切换按钮不再需要。 */
+html[data-wr-blog] .readerControls_item.white {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html[data-wr-blog] :is(.readerHeaderButton, .readerFooter_button) {
+  display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #0969da !important;
+  font: 500 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif !important;
+  cursor: pointer !important;
+}
+
+html[data-wr-blog] .readerHeaderButton::before {
+  content: "← ";
+}
+
+html[data-wr-blog] .readerFooter_button::after {
+  content: " →";
+}
+
+html[data-wr-blog] .readerHeaderButton:hover {
+  text-decoration: underline !important;
+}
+
+.wr-blog {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 !important;
+  padding: 56px 16px 0;
+  color: #1f2328;
+  font: 18px/1.85 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.02em;
+  text-align: left;
+  word-break: break-word;
+}
+
+.wr-blog > * {
+  box-sizing: border-box;
+  max-width: 720px;
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+.wr-blog-body {
+  padding-bottom: 32px;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.wr-blog-header {
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.wr-blog-kicker {
+  margin-bottom: 12px;
+  color: #0969da;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.wr-blog-title {
+  margin: 0 0 16px;
+  color: #1f2328;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.wr-blog-meta {
+  color: #656d76;
+  font-size: 14px;
+}
+
+.wr-blog-body :is(p, div) {
+  margin: 0;
+}
+
+.wr-blog-body p {
+  margin: 0 0 1.2em;
+}
+
+.wr-blog-body :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.8em 0 0.8em;
+  color: #1f2328;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.wr-blog-body h1 { font-size: 28px; }
+.wr-blog-body h2 { font-size: 24px; }
+.wr-blog-body h3 { font-size: 21px; }
+.wr-blog-body :is(h4, h5, h6) { font-size: 18px; }
+
+.wr-blog-body [data-align="right"] {
+  color: #656d76;
+  text-align: right;
+}
+
+.wr-blog-body [data-align="center"] {
+  text-align: center;
+}
+
+.wr-blog-body blockquote {
+  margin: 0 0 1.2em;
+  padding: 0 1em;
+  border-left: 4px solid #d8dee4;
+  color: #656d76;
+}
+
+.wr-blog-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5em auto;
+  border-radius: 6px;
+}
+
+.wr-blog-body hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid #d8dee4;
+}
+
+.wr-blog-body :is(ul, ol) {
+  margin: 0 0 1.2em;
+  padding-left: 2em;
+}
+
+.wr-blog-body pre {
+  overflow-x: auto;
+  padding: 16px;
+  border-radius: 6px;
+  background: #f6f8fa;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.wr-blog-body table {
+  margin: 0 0 1.2em;
+  border-collapse: collapse;
+}
+
+.wr-blog-body :is(td, th) {
+  padding: 6px 12px;
+  border: 1px solid #d8dee4;
+}
+
+.wr-blog-note {
+  margin-left: 2px;
+  color: #0969da;
+  font-size: 12px;
+  cursor: help;
+}
