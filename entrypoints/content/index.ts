@@ -3,7 +3,11 @@ import './style.css';
 import { browser } from '#imports';
 
 import { buildArticle } from '../../utils/blog-article';
-import { CHAPTER_EVENT, CHAPTER_REQUEST_EVENT } from '../../utils/chapter-bridge';
+import {
+  CHAPTER_EVENT,
+  CHAPTER_REQUEST_EVENT,
+  PROGRESS_EVENT,
+} from '../../utils/chapter-bridge';
 import { createHeadDisguise } from '../../utils/head-disguise';
 import {
   DEFAULT_SETTINGS,
@@ -26,8 +30,9 @@ export default defineContentScript({
     let current: Settings = DEFAULT_SETTINGS;
     let watchFired = false;
 
-    // 博客文章：主世界脚本转发的当前章节 HTML，以及据此生成的文章节点。
-    let chapterHtml: string | null = null;
+    // 博客文章：主世界脚本转发的当前章节各段 HTML、阅读位置，以及据此生成的文章节点。
+    let chapterParts: string[] | null = null;
+    let progress: number | null = null;
     let article: HTMLElement | null = null;
     let articleKey = '';
     let articleScheduled = false;
@@ -52,8 +57,21 @@ export default defineContentScript({
     ctx.addEventListener(document, CHAPTER_EVENT, (event) => {
       const detail = (event as CustomEvent<unknown>).detail;
       if (typeof detail !== 'string') return;
-      chapterHtml = detail;
+      try {
+        const parts: unknown = JSON.parse(detail);
+        if (!Array.isArray(parts) || !parts.length || !parts.every((p) => typeof p === 'string')) return;
+        chapterParts = parts;
+      } catch {
+        return;
+      }
+      progress = null;
       articleKey = '';
+      scheduleArticle();
+    });
+    ctx.addEventListener(document, PROGRESS_EVENT, (event) => {
+      const detail = Number((event as CustomEvent<unknown>).detail);
+      if (!Number.isFinite(detail)) return;
+      progress = detail;
       scheduleArticle();
     });
     // 内容脚本可能晚于首次截获（如扩展重新加载），主动请求重发一次。
@@ -113,11 +131,22 @@ export default defineContentScript({
       root.removeAttribute('data-wr-blog');
     }
 
+    /** 读书按段翻「下一页」且只显示当前段，取起始字符偏移不超过阅读位置的最后一段。 */
+    function currentPartIndex(parts: string[]): number {
+      if (progress === null) return 0;
+      let index = 0;
+      parts.forEach((part, i) => {
+        const start = Number(/data-wr-co="(\d+)"/.exec(part)?.[1]);
+        if (start <= progress!) index = i;
+      });
+      return index;
+    }
+
     function syncArticle() {
       if (!ctx.isValid) return;
 
       const host =
-        chapterHtml !== null && current.articleMode && isReaderUrl(location.href)
+        chapterParts !== null && current.articleMode && isReaderUrl(location.href)
           ? document.querySelector<HTMLElement>('.readerContent .app_content')
           : null;
       if (!host) {
@@ -137,10 +166,11 @@ export default defineContentScript({
         author: text('.readerCatalog_bookInfo_author'),
         chapterTitle: text('.readerTopBar_title_chapter'),
       };
-      const key = JSON.stringify(meta);
+      const part = currentPartIndex(chapterParts!);
+      const key = JSON.stringify([meta, part]);
 
       if (!article || key !== articleKey) {
-        const next = buildArticle(chapterHtml!, meta, document);
+        const next = buildArticle(chapterParts![part]!, meta, document);
         if (article) article.replaceWith(next);
         article = next;
         articleKey = key;
