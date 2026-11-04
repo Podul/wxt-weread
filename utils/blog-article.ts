@@ -132,5 +132,9 @@ export function buildArticle(html: string, meta: ChapterMeta, doc: Document): HT
   const article = doc.createElement('article');
   article.className = 'wr-blog';
   article.append(header, body);
+  // 读书在正文容器上拦截选中、复制和右键，文章内的这些事件不交给它处理。
+  for (const type of ['mousedown', 'mouseup', 'selectstart', 'copy', 'contextmenu', 'dragstart']) {
+    article.addEventListener(type, (event) => event.stopPropagation());
+  }
   return article;
 }

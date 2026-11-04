@@ -213,6 +213,13 @@ html[data-wr-blog] :is(.readerHeaderButton, .readerFooter_button):focus-visible 
   outline-offset: 4px !important;
 }
 
+/* 读书正文区禁止选中，文章需要能选中复制。 */
+html[data-wr-blog] .wr-blog,
+html[data-wr-blog] .wr-blog * {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
 html[data-wr-blog] ::selection {
   background: var(--wr-selection);
 }
