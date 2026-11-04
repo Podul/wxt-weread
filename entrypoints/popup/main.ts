@@ -3,6 +3,7 @@ import {
   normalizeSettings,
   normalizeTitle,
   settings,
+  STYLE_TITLES,
   type Settings,
 } from '../../utils/settings';
 
@@ -30,6 +31,7 @@ function render() {
 
   spoofTitle.checked = current.spoofTitle;
   titleInput.value = current.spoofTitleText;
+  titleInput.placeholder = `${STYLE_TITLES[current.articleStyle]}（跟随外观）`;
   titleInput.disabled = !current.spoofTitle;
   titleField.classList.toggle('field--disabled', !current.spoofTitle);
 

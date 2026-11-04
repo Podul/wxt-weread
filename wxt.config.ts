@@ -11,7 +11,7 @@ export default defineConfig({
     },
     web_accessible_resources: [
       {
-        resources: ['doc-icon.svg'],
+        resources: ['favicon/*.svg'],
         matches: ['https://weread.qq.com/*'],
       },
     ],

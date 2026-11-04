@@ -4,7 +4,7 @@ type FaviconOriginal = {
 };
 
 export interface HeadDisguise {
-  update(options: { title: string | null; favicon: boolean }): void;
+  update(options: { title: string | null; favicon: string | null }): void;
   dispose(): void;
 }
 
@@ -24,7 +24,7 @@ const OBSERVE_OPTIONS: MutationObserverInit = {
  * 只改写 document.title 和现有 icon link 的属性，不 patch 页面 setter，
  * 也不使用定时器反复抢写；MutationObserver 负责在站点改回标题/图标时收敛。
  */
-export function createHeadDisguise(iconUrl: string): HeadDisguise {
+export function createHeadDisguise(): HeadDisguise {
   const originalIcons = new Map<HTMLLinkElement, FaviconOriginal>();
 
   let titleDesired: string | null = null;
@@ -32,7 +32,7 @@ export function createHeadDisguise(iconUrl: string): HeadDisguise {
   let lastSiteTitle = '';
   let lastWrittenTitle = '';
 
-  let faviconEnabled = false;
+  let iconUrl: string | null = null;
   let addedIcon: HTMLLinkElement | null = null;
 
   let headObserver: MutationObserver | null = null;
@@ -121,7 +121,7 @@ export function createHeadDisguise(iconUrl: string): HeadDisguise {
   }
 
   function syncFavicon() {
-    if (!faviconEnabled || !document.head) return;
+    if (iconUrl === null || !document.head) return;
 
     const links = Array.from(
       document.querySelectorAll<HTMLLinkElement>(FAVICON_SELECTOR),
@@ -131,9 +131,11 @@ export function createHeadDisguise(iconUrl: string): HeadDisguise {
       if (!addedIcon?.isConnected) {
         addedIcon = document.createElement('link');
         addedIcon.rel = 'icon';
-        addedIcon.href = iconUrl;
         addedIcon.setAttribute('data-wr-fake-icon', '');
         document.head.append(addedIcon);
+      }
+      if (addedIcon.getAttribute('href') !== iconUrl) {
+        addedIcon.setAttribute('href', iconUrl);
       }
       return;
     }
@@ -156,7 +158,7 @@ export function createHeadDisguise(iconUrl: string): HeadDisguise {
   }
 
   function restoreFavicon() {
-    faviconEnabled = false;
+    iconUrl = null;
 
     for (const [link, original] of originalIcons) {
       if (!link.isConnected) continue;
@@ -171,20 +173,20 @@ export function createHeadDisguise(iconUrl: string): HeadDisguise {
     addedIcon = null;
   }
 
-  function update({ title, favicon }: { title: string | null; favicon: boolean }) {
+  function update({ title, favicon }: { title: string | null; favicon: string | null }) {
     if (title === null) {
       disableTitle();
     } else {
       enableTitle(title);
     }
 
-    if (favicon) {
-      faviconEnabled = true;
-    } else {
+    if (favicon === null) {
       restoreFavicon();
+    } else {
+      iconUrl = favicon;
     }
 
-    if (titleDesired !== null || faviconEnabled) {
+    if (titleDesired !== null || iconUrl !== null) {
       startObserver();
       scheduleSync();
     } else {

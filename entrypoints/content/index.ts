@@ -9,8 +9,9 @@ import {
   DEFAULT_SETTINGS,
   isReaderUrl,
   normalizeSettings,
-  normalizeTitle,
+  resolveTitle,
   settings,
+  styleFaviconPath,
   type Settings,
 } from '../../utils/settings';
 
@@ -20,7 +21,7 @@ export default defineContentScript({
   runAt: 'document_start',
   main(ctx) {
     const root = document.documentElement;
-    const head = createHeadDisguise(browser.runtime.getURL('/doc-icon.svg'));
+    const head = createHeadDisguise();
 
     let current: Settings = DEFAULT_SETTINGS;
     let watchFired = false;
@@ -87,8 +88,11 @@ export default defineContentScript({
         onReader && next.articleMode && next.hideMarks,
       );
       head.update({
-        title: onReader && next.spoofTitle ? normalizeTitle(next.spoofTitleText) : null,
-        favicon: onReader && next.spoofFavicon,
+        title: onReader && next.spoofTitle ? resolveTitle(next) : null,
+        favicon:
+          onReader && next.spoofFavicon
+            ? browser.runtime.getURL(styleFaviconPath(next.articleStyle))
+            : null,
       });
       scheduleArticle();
     }

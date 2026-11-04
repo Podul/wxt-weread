@@ -5,6 +5,19 @@ export const ARTICLE_STYLES = ['blog', 'code', 'sheet', 'doc', 'terminal'] as co
 
 export type ArticleStyle = (typeof ARTICLE_STYLES)[number];
 
+/** 各外观对应的默认伪装标题，图标见 public/favicon/<style>.svg。 */
+export const STYLE_TITLES: Record<ArticleStyle, string> = {
+  blog: '团队技术博客',
+  code: 'index.ts — workspace',
+  sheet: '工作簿1.xlsx',
+  doc: '项目周报 - 在线文档',
+  terminal: 'bash — build.log',
+};
+
+export function styleFaviconPath(style: ArticleStyle) {
+  return `/favicon/${style}.svg` as const;
+}
+
 export interface Settings {
   /** 文章模式总开关，控制页面外观与划线隐藏 */
   articleMode: boolean;
@@ -14,7 +27,7 @@ export interface Settings {
   hideMarks: boolean;
   /** 是否伪装标签页标题 */
   spoofTitle: boolean;
-  /** 伪装后的标签页标题文本 */
+  /** 自定义伪装标题，留空则使用当前外观的默认标题 */
   spoofTitleText: string;
   /** 是否伪装网站图标 */
   spoofFavicon: boolean;
@@ -25,7 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   articleStyle: 'blog',
   hideMarks: true,
   spoofTitle: true,
-  spoofTitleText: '工作文档',
+  spoofTitleText: '',
   spoofFavicon: true,
 };
 
@@ -35,12 +48,18 @@ export const settings = storage.defineItem<Settings>('local:settings', {
 
 const MAX_TITLE_LENGTH = 80;
 
-/** 压缩空白、截断长度，空值回退默认标题。 */
+/** 旧版本的默认标题，视为未自定义。 */
+const LEGACY_DEFAULT_TITLE = '工作文档';
+
+/** 压缩空白、截断长度。 */
 export function normalizeTitle(text: string): string {
-  return (
-    text.replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE_LENGTH) ||
-    DEFAULT_SETTINGS.spoofTitleText
-  );
+  const title = text.replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE_LENGTH);
+  return title === LEGACY_DEFAULT_TITLE ? '' : title;
+}
+
+/** 实际使用的伪装标题：自定义标题优先，否则跟随外观。 */
+export function resolveTitle(value: Settings): string {
+  return normalizeTitle(value.spoofTitleText) || STYLE_TITLES[value.articleStyle];
 }
 
 /** 逐字段合并默认值，兼容旧版本或损坏的存储数据。 */
