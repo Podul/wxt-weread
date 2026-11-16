@@ -153,6 +153,26 @@ html[data-wr-blog] .readerContent .app_content > .wr_various_font_provider_wrapp
   visibility: hidden !important;
 }
 
+/*
+ * 翻章过渡：读书在原正文不占高度或 visibility:hidden 时只画空字符串。翻章时恢复它的尺寸、
+ * 用 opacity 隐藏并脱离布局，旧文章留在原位，等新章绘制完成后再整体替换，避免闪出读书原生排版。
+ */
+html[data-wr-blog-pending] .readerContent .app_content {
+  position: relative !important;
+}
+
+html[data-wr-blog-pending] .readerContent .app_content > .wr_various_font_provider_wrapper {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 html[data-wr-blog] .readerContent .app_content > .wr-blog {
   order: 1;
 }

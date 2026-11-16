@@ -2,8 +2,10 @@ import './style.css';
 
 import { browser } from '#imports';
 
-import { buildArticle } from '../../utils/blog-article';
+import { buildArticle, buildTextArticle, type CanvasRow } from '../../utils/blog-article';
 import {
+  CANVAS_RESET_EVENT,
+  CANVAS_TEXT_EVENT,
   CHAPTER_EVENT,
   CHAPTER_REQUEST_EVENT,
   PROGRESS_EVENT,
@@ -33,6 +35,10 @@ export default defineContentScript({
     // 博客文章：主世界脚本转发的当前章节各段 HTML、阅读位置，以及据此生成的文章节点。
     let chapterParts: string[] | null = null;
     let progress: number | null = null;
+    // 网文：读书逐字绘制在 canvas 上的视觉行，按 y 升序。
+    let canvasRows: CanvasRow[] | null = null;
+    // 翻章过渡：原正文已恢复绘制但新章还没截获，旧文章先留在原位。
+    let canvasPending = false;
     let article: HTMLElement | null = null;
     let articleKey = '';
     let articleScheduled = false;
@@ -74,6 +80,39 @@ export default defineContentScript({
       progress = detail;
       scheduleArticle();
     });
+    ctx.addEventListener(document, CANVAS_TEXT_EVENT, (event) => {
+      const detail = (event as CustomEvent<unknown>).detail;
+      if (typeof detail !== 'string') return;
+      try {
+        const rows: unknown = JSON.parse(detail);
+        if (!Array.isArray(rows) || !rows.length) return;
+        const valid = rows.filter(
+          (row): row is [number, string] =>
+            Array.isArray(row) && Number.isFinite(row[0]) && typeof row[1] === 'string',
+        );
+        if (!valid.length) return;
+        canvasRows = valid.map(([y, text]) => ({ y, text }));
+      } catch {
+        return;
+      }
+      canvasPending = false;
+      root.removeAttribute('data-wr-blog-pending');
+      articleKey = '';
+      scheduleArticle();
+    });
+
+    // 文章模式下 canvas 被收起，读书不会绘制新章；翻章前恢复它的尺寸（保持不可见）并清空上一章的数据。
+    const reloadForChapter = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (
+        target?.closest?.(
+          '.readerFooter_button, .readerHeaderButton, .renderTarget_pager_button',
+        )
+      ) {
+        prepareCanvasChapter();
+      }
+    };
+    document.addEventListener('click', reloadForChapter, true);
     // 内容脚本可能晚于首次截获（如扩展重新加载），主动请求重发一次。
     document.dispatchEvent(new CustomEvent(CHAPTER_REQUEST_EVENT));
 
@@ -131,6 +170,19 @@ export default defineContentScript({
       root.removeAttribute('data-wr-blog');
     }
 
+    /**
+     * 新章节的正文需要读书重新绘制。原正文被收起（高度 0）或 visibility:hidden 时读书只画空字符串，
+     * 所以翻章时恢复它的尺寸、用 opacity 隐藏并让它脱离布局；旧文章留在原位，新章绘制完再整体替换。
+     */
+    function prepareCanvasChapter() {
+      if (canvasRows === null) return;
+      canvasPending = true;
+      root.setAttribute('data-wr-blog-pending', '');
+      if (article) root.setAttribute('data-wr-blog', '');
+      // 同一章重复点击（如首章点「上一章」）时也要清掉可能重绘的旧行。
+      document.dispatchEvent(new CustomEvent(CANVAS_RESET_EVENT));
+    }
+
     /** 读书按段翻「下一页」且只显示当前段，取起始字符偏移不超过阅读位置的最后一段。 */
     function currentPartIndex(parts: string[]): number {
       if (progress === null) return 0;
@@ -145,8 +197,29 @@ export default defineContentScript({
     function syncArticle() {
       if (!ctx.isValid) return;
 
+      if (canvasPending) {
+        const pendingHost =
+          current.articleMode && isReaderUrl(location.href)
+            ? document.querySelector<HTMLElement>('.readerContent .app_content')
+            : null;
+        if (!pendingHost) {
+          canvasPending = false;
+          root.removeAttribute('data-wr-blog-pending');
+          removeArticle();
+          return;
+        }
+        // 新章还在绘制：旧文章保持原样，新章截获后由下面的分支替换。
+        if (article) {
+          if (article.parentElement !== pendingHost) pendingHost.append(article);
+          root.setAttribute('data-wr-blog', '');
+        }
+        return;
+      }
+
       const host =
-        chapterParts !== null && current.articleMode && isReaderUrl(location.href)
+        (chapterParts !== null || (canvasRows !== null && canvasRows.length > 0)) &&
+        current.articleMode &&
+        isReaderUrl(location.href)
           ? document.querySelector<HTMLElement>('.readerContent .app_content')
           : null;
       if (!host) {
@@ -166,23 +239,36 @@ export default defineContentScript({
         author: text('.readerCatalog_bookInfo_author'),
         chapterTitle: text('.readerTopBar_title_chapter'),
       };
-      const part = currentPartIndex(chapterParts!);
-      const key = JSON.stringify([meta, part]);
 
-      if (!article || key !== articleKey) {
-        const next = buildArticle(chapterParts![part]!, meta, document);
-        if (article) article.replaceWith(next);
-        article = next;
-        articleKey = key;
+      if (chapterParts !== null) {
+        const part = currentPartIndex(chapterParts);
+        const key = JSON.stringify([meta, part, 'html']);
+        if (!article || key !== articleKey) {
+          const next = buildArticle(chapterParts[part]!, meta, document);
+          if (article) article.replaceWith(next);
+          article = next;
+          articleKey = key;
+        }
+      } else if (canvasRows !== null) {
+        const key = JSON.stringify([meta, 'canvas']);
+        if (!article || key !== articleKey) {
+          const next = buildTextArticle(canvasRows, meta, document);
+          if (article) article.replaceWith(next);
+          article = next;
+          articleKey = key;
+        }
       }
-      if (article.parentElement !== host) host.append(article);
-      root.setAttribute('data-wr-blog', '');    }
+      if (article && article.parentElement !== host) host.append(article);
+      root.setAttribute('data-wr-blog', '');
+    }
 
     ctx.onInvalidated(() => {
       unwatch();
       articleObserver.disconnect();
+      document.removeEventListener('click', reloadForChapter, true);
       removeArticle();
       head.dispose();
+      root.removeAttribute('data-wr-blog-pending');
       root.removeAttribute('data-wr-article');
       root.removeAttribute('data-wr-style');
       root.removeAttribute('data-wr-hide-marks');

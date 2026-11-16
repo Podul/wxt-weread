@@ -93,18 +93,13 @@ function stripLeadingTitles(body: HTMLElement, chapterTitle: string) {
   }
 }
 
-export function buildArticle(html: string, meta: ChapterMeta, doc: Document): HTMLElement {
-  const parsed = new DOMParser().parseFromString(html, 'text/html');
-
-  const body = doc.createElement('div');
-  body.className = 'wr-blog-body';
-  for (const child of Array.from(parsed.body.childNodes)) {
-    const converted = convert(child, doc);
-    if (converted) body.appendChild(converted);
-  }
-  stripLeadingTitles(body, meta.chapterTitle);
-
-  const charCount = squash(body.textContent ?? '').length;
+/** 文章头部与外壳，排版书和网文共用。 */
+function buildShell(
+  meta: ChapterMeta,
+  doc: Document,
+  body: HTMLElement,
+  charCount: number,
+): HTMLElement {
   const minutes = Math.max(1, Math.round(charCount / CHARS_PER_MINUTE));
 
   const header = doc.createElement('header');
@@ -137,4 +132,74 @@ export function buildArticle(html: string, meta: ChapterMeta, doc: Document): HT
     article.addEventListener(type, (event) => event.stopPropagation());
   }
   return article;
+}
+
+export function buildArticle(html: string, meta: ChapterMeta, doc: Document): HTMLElement {
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+  const body = doc.createElement('div');
+  body.className = 'wr-blog-body';
+  for (const child of Array.from(parsed.body.childNodes)) {
+    const converted = convert(child, doc);
+    if (converted) body.appendChild(converted);
+  }
+  stripLeadingTitles(body, meta.chapterTitle);
+
+  return buildShell(meta, doc, body, squash(body.textContent ?? '').length);
+}
+
+export interface CanvasRow {
+  y: number;
+  text: string;
+}
+
+/** 同一段内折行的最小行距；明显更大处是新段。 */
+function lineGap(lines: CanvasRow[]): number {
+  let min = Infinity;
+  for (let i = 1; i < lines.length; i++) {
+    const current = lines[i];
+    const previous = lines[i - 1];
+    if (!current || !previous) continue;
+    const gap = Math.round(current.y - previous.y);
+    if (gap > 0 && gap < min) min = gap;
+  }
+  return Number.isFinite(min) ? min : 0;
+}
+
+/** 网文正文由读书逐字绘制在 canvas 上，按视觉行还原成文章段落。 */
+export function buildTextArticle(
+  rows: CanvasRow[],
+  meta: ChapterMeta,
+  doc: Document,
+): HTMLElement {
+  const lines = rows
+    .map((row) => ({ y: row.y, text: row.text.replace(ZERO_WIDTH, '') }))
+    .filter((row) => row.text.trim());
+
+  const gap = lineGap(lines);
+  const paragraphs: string[] = [];
+  let current = '';
+  let prevY: number | null = null;
+  for (const line of lines) {
+    const prev = prevY;
+    const breaks = prev !== null && gap > 0 && line.y - prev > gap * 1.2;
+    if (!current || breaks) {
+      if (current) paragraphs.push(current);
+      current = line.text;
+    } else {
+      current += line.text;
+    }
+    prevY = line.y;
+  }
+  if (current) paragraphs.push(current);
+
+  const body = doc.createElement('div');
+  body.className = 'wr-blog-body';
+  for (const text of paragraphs) {
+    const p = doc.createElement('p');
+    p.textContent = text;
+    body.appendChild(p);
+  }
+
+  return buildShell(meta, doc, body, squash(paragraphs.join('')).length);
 }

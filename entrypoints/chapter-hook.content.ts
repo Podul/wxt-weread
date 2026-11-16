@@ -1,4 +1,6 @@
 import {
+  CANVAS_RESET_EVENT,
+  CANVAS_TEXT_EVENT,
   CHAPTER_EVENT,
   CHAPTER_FRAGMENT_ID,
   CHAPTER_REQUEST_EVENT,
@@ -63,6 +65,67 @@ export default defineContentScript({
       }
       return result;
     };
+
+    // 网文正文不经 DOMParser，由读书逐字绘制到 canvas；按绘制坐标还原章节的视觉行。
+    interface CanvasRow {
+      y: number;
+      text: string;
+    }
+
+    const canvasRows: CanvasRow[] = [];
+    const canvasGlyphs = new Set<string>();
+    let canvasTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastCanvasPayload: string | null = null;
+
+    function flushCanvasRows() {
+      canvasTimer = null;
+      if (!canvasRows.length) return;
+      const payload = JSON.stringify(canvasRows.map((row) => [row.y, row.text]));
+      if (payload === lastCanvasPayload) return;
+      lastCanvasPayload = payload;
+      dispatch(CANVAS_TEXT_EVENT, payload);
+    }
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (
+      this: CanvasRenderingContext2D,
+      text: string,
+      x: number,
+      y: number,
+      maxWidth?: number,
+    ) {
+      try {
+        if (
+          typeof text === 'string' &&
+          text !== '' &&
+          this.canvas?.closest?.('.wr_canvasContainer')
+        ) {
+          // 同一位置重复绘制（滚动补绘）只记一次。
+          const key = `${y}\u0000${x}\u0000${text}`;
+          if (!canvasGlyphs.has(key)) {
+            canvasGlyphs.add(key);
+            canvasRows.push({ y, text });
+            if (canvasTimer !== null) clearTimeout(canvasTimer);
+            canvasTimer = setTimeout(flushCanvasRows, 400);
+          }
+        }
+      } catch {
+        // 截获失败不能影响读书自身绘制。
+      }
+      return maxWidth === undefined
+        ? originalFillText.call(this, text, x, y)
+        : originalFillText.call(this, text, x, y, maxWidth);
+    };
+
+    document.addEventListener(CANVAS_RESET_EVENT, () => {
+      if (canvasTimer !== null) {
+        clearTimeout(canvasTimer);
+        canvasTimer = null;
+      }
+      canvasRows.length = 0;
+      canvasGlyphs.clear();
+      lastCanvasPayload = null;
+    });
 
     // 读书进入章节、翻页时会立即 POST /web/book/read 上报阅读位置，co 为章节内字符偏移。
     XMLHttpRequest.prototype.open = function (

@@ -9,3 +9,9 @@ export const CHAPTER_REQUEST_EVENT = 'wr-doc:chapter-request';
 
 /** 读书预处理后的章节 HTML 根节点 id，用来识别章节正文。 */
 export const CHAPTER_FRAGMENT_ID = 'wr-html-preprocess-fragment';
+
+/** 主世界脚本从网文 canvas 逐字绘制中还原的章节行，detail 为 `[y, 文本]` 数组的 JSON。 */
+export const CANVAS_TEXT_EVENT = 'wr-doc:canvas-text';
+
+/** 内容脚本切换章节时请求主世界脚本清空已收集的 canvas 行。 */
+export const CANVAS_RESET_EVENT = 'wr-doc:canvas-reset';
