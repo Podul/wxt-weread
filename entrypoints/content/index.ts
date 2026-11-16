@@ -2,13 +2,19 @@ import './style.css';
 
 import { browser } from '#imports';
 
-import { buildArticle, buildTextArticle, type CanvasRow } from '../../utils/blog-article';
+import {
+  buildArticle,
+  buildPlainTextArticle,
+  buildTextArticle,
+  type CanvasRow,
+} from '../../utils/blog-article';
 import {
   CANVAS_RESET_EVENT,
   CANVAS_TEXT_EVENT,
   CHAPTER_EVENT,
   CHAPTER_REQUEST_EVENT,
   PROGRESS_EVENT,
+  TEXT_EVENT,
 } from '../../utils/chapter-bridge';
 import { createHeadDisguise } from '../../utils/head-disguise';
 import {
@@ -35,6 +41,8 @@ export default defineContentScript({
     // 博客文章：主世界脚本转发的当前章节各段 HTML、阅读位置，以及据此生成的文章节点。
     let chapterParts: string[] | null = null;
     let progress: number | null = null;
+    // 网文：读书解码出的完整章节明文（\r\n 分段），优先于 canvas 行。
+    let chapterText: string | null = null;
     // 网文：读书逐字绘制在 canvas 上的视觉行，按 y 升序。
     let canvasRows: CanvasRow[] | null = null;
     // 翻章过渡：原正文已恢复绘制但新章还没截获，旧文章先留在原位。
@@ -95,6 +103,15 @@ export default defineContentScript({
       } catch {
         return;
       }
+      canvasPending = false;
+      root.removeAttribute('data-wr-blog-pending');
+      articleKey = '';
+      scheduleArticle();
+    });
+    ctx.addEventListener(document, TEXT_EVENT, (event) => {
+      const detail = (event as CustomEvent<unknown>).detail;
+      if (typeof detail !== 'string' || !detail.trim()) return;
+      chapterText = detail;
       canvasPending = false;
       root.removeAttribute('data-wr-blog-pending');
       articleKey = '';
@@ -217,7 +234,9 @@ export default defineContentScript({
       }
 
       const host =
-        (chapterParts !== null || (canvasRows !== null && canvasRows.length > 0)) &&
+        (chapterParts !== null ||
+          chapterText !== null ||
+          (canvasRows !== null && canvasRows.length > 0)) &&
         current.articleMode &&
         isReaderUrl(location.href)
           ? document.querySelector<HTMLElement>('.readerContent .app_content')
@@ -245,6 +264,14 @@ export default defineContentScript({
         const key = JSON.stringify([meta, part, 'html']);
         if (!article || key !== articleKey) {
           const next = buildArticle(chapterParts[part]!, meta, document);
+          if (article) article.replaceWith(next);
+          article = next;
+          articleKey = key;
+        }
+      } else if (chapterText !== null) {
+        const key = JSON.stringify([meta, 'text']);
+        if (!article || key !== articleKey) {
+          const next = buildPlainTextArticle(chapterText, meta, document);
           if (article) article.replaceWith(next);
           article = next;
           articleKey = key;

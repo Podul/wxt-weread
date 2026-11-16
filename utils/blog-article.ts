@@ -166,6 +166,25 @@ function lineGap(lines: CanvasRow[]): number {
   return Number.isFinite(min) ? min : 0;
 }
 
+/** 网文完整明文由读书解码章节分片得到，`\r\n` 分隔段落，段首是用于缩进的全角空格。 */
+export function buildPlainTextArticle(
+  text: string,
+  meta: ChapterMeta,
+  doc: Document,
+): HTMLElement {
+  const body = doc.createElement('div');
+  body.className = 'wr-blog-body';
+  for (const line of text.split(/\r?\n/)) {
+    const value = line.replace(ZERO_WIDTH, '').trim();
+    if (!value) continue;
+    const p = doc.createElement('p');
+    p.textContent = value;
+    body.appendChild(p);
+  }
+
+  return buildShell(meta, doc, body, squash(body.textContent ?? '').length);
+}
+
 /** 网文正文由读书逐字绘制在 canvas 上，按视觉行还原成文章段落。 */
 export function buildTextArticle(
   rows: CanvasRow[],
